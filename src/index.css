@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 5% 6%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 263 70% 50%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 5% 6%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 5% 6%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 263 70% 50%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5% 11%;
+    --input: 240 5% 11%;
+    --ring: 263 70% 50%;
+
+    /* Custom EdTech Design System */
+    --primary-glow: 263 70% 60%;
+    --electric-blue: 217 91% 60%;
+    --electric-cyan: 189 85% 60%;
+    --neural-purple: 280 100% 70%;
+    --quantum-green: 142 76% 36%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-neural: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--neural-purple)));
+    --gradient-electric: linear-gradient(135deg, hsl(var(--electric-blue)), hsl(var(--electric-cyan)));
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    
+    /* Shadows */
+    --shadow-glow: 0 0 40px hsl(var(--primary) / 0.3);
+    --shadow-electric: 0 0 30px hsl(var(--electric-blue) / 0.2);
+    --shadow-neural: 0 10px 30px -10px hsl(var(--neural-purple) / 0.4);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 5% 6%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 263 70% 50%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 5% 6%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 5% 6%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 263 70% 50%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5% 11%;
+    --input: 240 5% 11%;
+    --ring: 263 70% 50%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(240 10% 2%) 100%);
+    min-height: 100vh;
+  }
+
+  .glass-morphism {
+    backdrop-filter: blur(20px);
+    background: var(--gradient-glass);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .neural-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .electric-pulse {
+    animation: electric-pulse 2s ease-in-out infinite;
+  }
+
+  .floating-animation {
+    animation: floating 6s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-neural {
+    background: var(--gradient-neural);
+  }
+
+  .gradient-electric {
+    background: var(--gradient-electric);
+  }
+
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+}
+
+@keyframes electric-pulse {
+  0%, 100% { box-shadow: 0 0 20px hsl(var(--electric-blue) / 0.3); }
+  50% { box-shadow: 0 0 40px hsl(var(--electric-blue) / 0.6); }
+}
+
+@keyframes floating {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-20px) rotate(1deg); }
+  66% { transform: translateY(10px) rotate(-1deg); }
+}
