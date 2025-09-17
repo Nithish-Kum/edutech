@@ -82,17 +82,20 @@ const CourseManagement = ({ onCourseSelect }: CourseManagementProps) => {
   }, [courses, searchTerm, selectedDifficulty, selectedCategory, activeView]);
 
   const loadCourses = async () => {
+    console.log("Loading courses...", { user: !!user });
     setIsLoading(true);
     try {
       let loadedCourses: Course[] = [];
 
       if (user) {
+        console.log("Loading from Supabase...");
         // Load from Supabase
         const { data, error } = await supabase
           .from("courses")
           .select("*")
           .order("created_at", { ascending: false });
 
+        console.log("Supabase response:", { data, error });
         if (!error && data) {
           loadedCourses = data.map(course => ({
             ...course,
@@ -100,29 +103,31 @@ const CourseManagement = ({ onCourseSelect }: CourseManagementProps) => {
             createdAt: course.created_at,
             progress: Math.random() * 100 // TODO: Calculate actual progress
           }));
+          console.log("Loaded courses from Supabase:", loadedCourses);
         }
       } else {
+        console.log("Loading from localStorage...");
         // Load from localStorage
         const saved = localStorage.getItem("courses");
+        console.log("localStorage data:", saved);
         if (saved) {
           const parsed = JSON.parse(saved);
+          console.log("Parsed courses:", parsed);
           loadedCourses = parsed.map((course: Course) => ({
             ...course,
             progress: Math.random() * 100,
             createdAt: new Date().toISOString()
           }));
+          console.log("Loaded courses from localStorage:", loadedCourses);
         }
       }
 
-      // Add sample courses if none exist
-      if (loadedCourses.length === 0) {
-        loadedCourses = getSampleCourses();
-      }
-
+      // No sample courses - users start with empty library
+      console.log("Final loaded courses:", loadedCourses);
       setCourses(loadedCourses);
     } catch (error) {
       console.error("Error loading courses:", error);
-      setCourses(getSampleCourses());
+      setCourses([]);
     } finally {
       setIsLoading(false);
     }
@@ -167,8 +172,18 @@ const CourseManagement = ({ onCourseSelect }: CourseManagementProps) => {
   };
 
   const handleCourseCreated = (newCourse: Course) => {
-    setCourses(prev => [newCourse, ...prev]);
+    console.log("handleCourseCreated called with:", newCourse);
+    setCourses(prev => {
+      const updated = [newCourse, ...prev];
+      console.log("Updated courses list:", updated);
+      return updated;
+    });
     setShowCreator(false);
+    
+    // Force reload courses to ensure they show up
+    setTimeout(() => {
+      loadCourses();
+    }, 1000);
   };
 
   const deleteCourse = async (courseId: string) => {
@@ -194,63 +209,6 @@ const CourseManagement = ({ onCourseSelect }: CourseManagementProps) => {
     }
   };
 
-  const getSampleCourses = (): Course[] => [
-    {
-      id: "sample-1",
-      title: "Complete React Development",
-      description: "Master React from basics to advanced concepts with hands-on projects",
-      estimatedDuration: "40 hours",
-      difficulty: "Intermediate",
-      category: "Programming",
-      instructor: "AI Professor",
-      rating: 4.8,
-      studentsCount: 1250,
-      progress: 65,
-      tags: ["React", "JavaScript", "Web Development"],
-      modules: [
-        { id: "m1", title: "React Fundamentals", duration: "8 hours", topics: ["Components", "Props", "State"] },
-        { id: "m2", title: "Advanced React", duration: "12 hours", topics: ["Hooks", "Context", "Performance"] },
-        { id: "m3", title: "React Ecosystem", duration: "10 hours", topics: ["Router", "Redux", "Testing"] },
-        { id: "m4", title: "Project Build", duration: "10 hours", topics: ["Planning", "Implementation", "Deployment"] }
-      ]
-    },
-    {
-      id: "sample-2",
-      title: "Machine Learning Fundamentals",
-      description: "Introduction to ML concepts, algorithms, and practical applications",
-      estimatedDuration: "35 hours",
-      difficulty: "Beginner",
-      category: "Technology",
-      instructor: "AI Professor",
-      rating: 4.6,
-      studentsCount: 890,
-      progress: 25,
-      tags: ["Machine Learning", "Python", "Data Science"],
-      modules: [
-        { id: "m1", title: "ML Basics", duration: "8 hours", topics: ["What is ML", "Types of Learning", "Data Preparation"] },
-        { id: "m2", title: "Algorithms", duration: "15 hours", topics: ["Linear Regression", "Classification", "Clustering"] },
-        { id: "m3", title: "Implementation", duration: "12 hours", topics: ["Python", "Scikit-learn", "Model Evaluation"] }
-      ]
-    },
-    {
-      id: "sample-3",
-      title: "Advanced CSS & Animations",
-      description: "Create stunning web animations and modern CSS layouts",
-      estimatedDuration: "25 hours",
-      difficulty: "Advanced",
-      category: "Design",
-      instructor: "AI Professor",
-      rating: 4.9,
-      studentsCount: 670,
-      progress: 100,
-      tags: ["CSS", "Animation", "Web Design"],
-      modules: [
-        { id: "m1", title: "Modern CSS", duration: "8 hours", topics: ["Grid", "Flexbox", "Custom Properties"] },
-        { id: "m2", title: "Animations", duration: "10 hours", topics: ["Transforms", "Keyframes", "Transitions"] },
-        { id: "m3", title: "Advanced Techniques", duration: "7 hours", topics: ["3D Effects", "Performance", "Browser Support"] }
-      ]
-    }
-  ];
 
   const CourseCard = ({ course }: { course: Course }) => (
     <motion.div
@@ -428,20 +386,56 @@ const CourseManagement = ({ onCourseSelect }: CourseManagementProps) => {
           ) : (
             <>
               {filteredCourses.length === 0 ? (
-                <Card className="glass-morphism border-white/20 p-12 text-center">
-                  <BookOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">No courses found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {searchTerm || selectedDifficulty !== "all" || selectedCategory !== "all"
-                      ? "Try adjusting your filters"
-                      : "Create your first course to get started"
-                    }
-                  </p>
-                  <Button onClick={() => setShowCreator(true)} variant="neural">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Course
-                  </Button>
-                </Card>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <Card className="glass-morphism border-white/20 p-12 text-center">
+                    <BookOpen className="w-20 h-20 mx-auto mb-6 text-muted-foreground opacity-50" />
+                    <h3 className="text-2xl font-bold text-gradient mb-3">
+                      {searchTerm || selectedDifficulty !== "all" || selectedCategory !== "all"
+                        ? "No Matching Courses Found"
+                        : "Welcome to Your Course Library!"
+                      }
+                    </h3>
+                    <p className="text-muted-foreground mb-8 text-lg">
+                      {searchTerm || selectedDifficulty !== "all" || selectedCategory !== "all"
+                        ? "Try adjusting your search filters or create a new course on this topic."
+                        : "You haven't created any courses yet. Start building your learning journey with AI-powered course creation!"
+                      }
+                    </p>
+                    
+                    <div className="space-y-4">
+                      <Button onClick={() => setShowCreator(true)} variant="hero" size="lg">
+                        <Plus className="w-5 h-5 mr-2" />
+                        Create Your First Course
+                      </Button>
+                      
+                      {!(searchTerm || selectedDifficulty !== "all" || selectedCategory !== "all") && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-primary rounded-full" />
+                              <span>Manual Course Builder</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-secondary rounded-full" />
+                              <span>AI Course Generator</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-accent rounded-full" />
+                              <span>Interactive Lessons</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            💡 Use the AI Course Creator tab for instant course generation with ChatGPT-quality content
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </motion.div>
               ) : (
                 <motion.div
                   layout

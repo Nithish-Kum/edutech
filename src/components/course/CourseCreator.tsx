@@ -94,30 +94,137 @@ const CourseCreator = ({ onCourseCreated, onClose, editCourse }: CourseCreatorPr
     { title: "Review", description: "Review and save your course" }
   ];
 
+  const generateDetailedLessonContent = async (moduleTitle: string, topics: string[], difficulty: string) => {
+    if (!isAIEnabled()) return null;
+    
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert educational content creator. Create comprehensive lesson content for a module titled "${moduleTitle}" covering these topics: ${topics.join(", ")}. 
+              
+              Return ONLY valid JSON in this format:
+              {
+                "lessons": [
+                  {
+                    "id": "lesson-1",
+                    "title": "Lesson Title",
+                    "content": "Detailed lesson content with explanations, examples, and step-by-step instructions. Make it comprehensive and educational.",
+                    "learningObjectives": ["Objective 1", "Objective 2"],
+                    "keyPoints": ["Point 1", "Point 2"],
+                    "examples": [
+                      {
+                        "title": "Example Title",
+                        "description": "Example description with code if applicable",
+                        "code": "code snippet if relevant"
+                      }
+                    ],
+                    "exercises": [
+                      {
+                        "question": "Exercise question",
+                        "type": "multiple-choice",
+                        "options": ["A", "B", "C", "D"],
+                        "correctAnswer": "A",
+                        "explanation": "Why this is correct"
+                      }
+                    ]
+                  }
+                ]
+              }
+              
+              Make content practical, engaging, and appropriate for ${difficulty} level students.`
+            },
+            {
+              role: "user",
+              content: `Create detailed lessons for module "${moduleTitle}" covering: ${topics.join(", ")}`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 3000
+        }),
+      });
+
+      const data = await response.json();
+      const content = data?.choices?.[0]?.message?.content;
+      
+      if (!content) return null;
+
+      const start = content.indexOf("{");
+      const end = content.lastIndexOf("}");
+      const jsonStr = start >= 0 && end >= 0 ? content.slice(start, end + 1) : content;
+      
+      return JSON.parse(jsonStr);
+    } catch (error) {
+      console.error("Error generating lesson content:", error);
+      return null;
+    }
+  };
+
   const generateCourseWithAI = async () => {
-    if (!courseData.title.trim() || !isAIEnabled()) return;
+    if (!courseData.title.trim() || !isAIEnabled() || courseData.modules.length === 0) return;
     
     setIsGenerating(true);
     try {
-      const aiCourse = await generateCourseOutline(courseData.title);
-      if (aiCourse) {
-        setCourseData(prev => ({
-          ...prev,
-          description: aiCourse.description || prev.description,
-          estimatedDuration: aiCourse.estimatedDuration || prev.estimatedDuration,
-          difficulty: aiCourse.difficulty || prev.difficulty,
-          modules: aiCourse.modules.map((m, idx) => ({
-            id: m.id || `module-${idx + 1}`,
-            title: m.title,
-            duration: m.duration || "2 hours",
-            topics: m.topics || [],
-            description: ""
-          }))
-        }));
-        setCurrentStep(2); // Jump to modules step
+      // Generate detailed content for each existing module
+      const enhancedModules = [];
+      
+      for (const module of courseData.modules) {
+        const lessonContent = await generateDetailedLessonContent(
+          module.title,
+          module.topics,
+          courseData.difficulty
+        );
+        
+        const enhancedModule = {
+          ...module,
+          lessons: lessonContent?.lessons || [
+            {
+              id: `${module.id}-lesson-1`,
+              title: `Introduction to ${module.title}`,
+              content: `Welcome to the ${module.title} module. In this comprehensive section, you'll learn about ${module.topics.join(", ")}. This module is designed to provide you with practical, hands-on experience that you can apply immediately.\n\nKey areas we'll cover:\n${module.topics.map(topic => `• ${topic}`).join("\n")}\n\nBy the end of this module, you'll have a solid understanding of these concepts and be ready to move to the next level.`,
+              learningObjectives: [
+                `Understand core concepts of ${module.title}`,
+                `Apply practical techniques and methods`,
+                `Complete hands-on exercises and projects`
+              ],
+              keyPoints: module.topics,
+              examples: [
+                {
+                  title: `Practical Example`,
+                  description: `Here's a practical example demonstrating the concepts in ${module.title}`,
+                  code: module.topics.some(t => t.toLowerCase().includes('code') || t.toLowerCase().includes('programming')) ? 
+                    '// Example code snippet\nconsole.log("Hello World");' : undefined
+                }
+              ],
+              exercises: [
+                {
+                  question: `What is the main purpose of ${module.title}?`,
+                  type: "text",
+                  explanation: "This helps reinforce the core concepts covered in this module."
+                }
+              ]
+            }
+          ]
+        };
+        
+        enhancedModules.push(enhancedModule);
       }
+      
+      setCourseData(prev => ({
+        ...prev,
+        modules: enhancedModules
+      }));
+      
     } catch (error) {
-      console.error("Error generating course:", error);
+      console.error("Error generating course content:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -233,11 +340,17 @@ const CourseCreator = ({ onCourseCreated, onClose, editCourse }: CourseCreatorPr
             user_id: user.id,
             title: course.title,
             description: course.description,
-            data: course,
-            created_at: course.createdAt
+            difficulty: course.difficulty,
+            estimated_duration: course.estimatedDuration,
+            modules: course.modules,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase error:", error);
+          throw error;
+        }
       } else {
         // Save to localStorage
         const existingCourses = JSON.parse(localStorage.getItem("courses") || "[]");
@@ -252,9 +365,16 @@ const CourseCreator = ({ onCourseCreated, onClose, editCourse }: CourseCreatorPr
         localStorage.setItem("courses", JSON.stringify(existingCourses));
       }
 
+      console.log("Course saved successfully:", course);
       onCourseCreated(course);
+      
+      // Show success message and close modal
+      alert('Course created successfully! Check your course library.');
+      onClose();
+      
     } catch (error) {
       console.error("Error saving course:", error);
+      alert(`Error saving course: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
@@ -584,6 +704,66 @@ const CourseCreator = ({ onCourseCreated, onClose, editCourse }: CourseCreatorPr
                 </Card>
               ))}
             </div>
+            
+            {/* AI Content Generation Section */}
+            {isAIEnabled() && (
+              <Card className="glass-morphism border-primary/30 bg-gradient-to-r from-primary/5 to-secondary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    <span className="text-gradient">Generate Course Content with AI</span>
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Let AI create detailed lesson content, exercises, and learning materials for your course modules.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full" />
+                      <span>Detailed lesson content for each module</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                      <span>Interactive exercises and quizzes</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full" />
+                      <span>Real-world examples and projects</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-orange-400 rounded-full" />
+                      <span>Learning objectives and assessments</span>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    onClick={generateCourseWithAI}
+                    disabled={isGenerating || courseData.modules.length === 0}
+                    variant="hero"
+                    size="lg"
+                    className="w-full"
+                  >
+                    {isGenerating ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Generating Course Content...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <Lightbulb className="w-5 h-5" />
+                        <span>Generate Course Content with AI</span>
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                    )}
+                  </Button>
+                  
+                  <p className="text-xs text-center text-muted-foreground">
+                    💡 This will enhance your course with comprehensive content while keeping your structure intact
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
 

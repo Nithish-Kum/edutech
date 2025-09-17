@@ -29,10 +29,24 @@ interface LessonViewerProps {
   lesson: {
     id: string;
     title: string;
-    content?: LessonContent;
+    content?: LessonContent | string;
     moduleTitle: string;
     courseDifficulty: string;
     topicName: string;
+    learningObjectives?: string[];
+    keyPoints?: string[];
+    examples?: Array<{
+      title: string;
+      description: string;
+      code?: string;
+    }>;
+    exercises?: Array<{
+      question: string;
+      type: 'multiple-choice' | 'coding' | 'text';
+      options?: string[];
+      correctAnswer?: string;
+      explanation?: string;
+    }>;
   };
   onComplete: () => void;
   onNext?: () => void;
@@ -47,7 +61,23 @@ const LessonViewer = ({
   onPrevious, 
   isCompleted = false 
 }: LessonViewerProps) => {
-  const [content, setContent] = useState<LessonContent | null>(lesson.content || null);
+  const [content, setContent] = useState<LessonContent | null>(() => {
+    if (typeof lesson.content === 'string') {
+      // Convert string content to LessonContent structure
+      return {
+        introduction: `Welcome to ${lesson.title}!`,
+        learningObjectives: lesson.learningObjectives || [`Understand ${lesson.topicName}`],
+        content: {
+          explanation: lesson.content,
+          keyPoints: lesson.keyPoints || [`Key concepts of ${lesson.topicName}`],
+          examples: lesson.examples || []
+        },
+        exercises: lesson.exercises || [],
+        resources: []
+      };
+    }
+    return lesson.content as LessonContent || null;
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState("content");
   const [currentExercise, setCurrentExercise] = useState(0);
