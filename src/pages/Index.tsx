@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/layout/Header";
 import CourseGenerator from "@/components/course/CourseGenerator";
 import ProgressDashboard from "@/components/dashboard/ProgressDashboard";
-import AIprofessor from "@/components/3d/AIprofessor";
+import MasterAvatarSystem from "@/components/3d/MasterAvatarSystem";
 import ProfessorControls from "@/components/professor/ProfessorControls";
 import heroImage from "@/assets/hero-ai-professor.jpg";
 import { 
@@ -129,7 +129,7 @@ const Index = () => {
               transition={{ duration: 1, delay: 0.6 }}
               className="h-96 lg:h-[500px]"
             >
-              <AIprofessor 
+              <MasterAvatarSystem 
                 className="floating-animation"
                 isListening={professorState.isListening}
                 isSpeaking={professorState.isSpeaking}
@@ -226,7 +226,7 @@ const Index = () => {
                     transition={{ duration: 0.6 }}
                     className="h-96 lg:h-[500px]"
                   >
-                    <AIprofessor 
+                    <MasterAvatarSystem 
                       isListening={professorState.isListening}
                       isSpeaking={professorState.isSpeaking}
                       currentTopic={professorState.currentTopic}

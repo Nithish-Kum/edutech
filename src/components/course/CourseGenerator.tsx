@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/enhanced-button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -27,6 +28,7 @@ const CourseGenerator = () => {
   const [generatedCourse, setGeneratedCourse] = useState<GeneratedCourse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const generateCourse = async () => {
     if (!topic.trim()) return;
@@ -226,7 +228,12 @@ const CourseGenerator = () => {
             transition={{ delay: 0.6, duration: 0.6 }}
             className="text-center"
           >
-            <Button variant="electric" size="xl" className="px-12">
+            <Button 
+              variant="electric" 
+              size="xl" 
+              className="px-12"
+              onClick={() => generatedCourse && navigate(`/course/${generatedCourse.id}`)}
+            >
               <BookOpen className="w-5 h-5 mr-2" />
               Start Learning
               <ArrowRight className="w-5 h-5 ml-2" />
