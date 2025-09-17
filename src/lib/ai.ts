@@ -159,9 +159,35 @@ export async function generateLessonContent(topic: string, moduleTitle: string, 
 }
 
 export async function askQuestion(context: string, question: string): Promise<string | null> {
-  if (!OPENAI_API_KEY) return null;
-  const system = `You are an AI professor. Answer concisely and practically using the lesson context when relevant. Be encouraging and helpful.`;
-  const user = `Context:\n${context}\n\nQuestion: ${question}`;
+  if (!OPENAI_API_KEY) {
+    // Fallback responses when API key is not available
+    const fallbackResponses = {
+      greeting: "Hello! I'm your AI Professor. I'm here to help you learn! What would you like to know?",
+      general: "That's a great question! While I don't have access to advanced AI capabilities right now, I'd encourage you to explore the lesson materials and try the interactive exercises. Is there a specific concept from the current lesson I can help clarify?",
+      encouragement: "You're doing great with your learning journey! Keep asking questions and exploring the course materials."
+    };
+    
+    const lowerQuestion = question.toLowerCase();
+    if (lowerQuestion.includes('hello') || lowerQuestion.includes('hi')) {
+      return fallbackResponses.greeting;
+    }
+    return fallbackResponses.general;
+  }
+  
+  const system = `You are an enthusiastic and knowledgeable AI Professor. Your role is to:
+  1. Answer student questions clearly and encouragingly
+  2. Use the lesson context when relevant, but also provide general knowledge
+  3. Break down complex concepts into simple explanations
+  4. Encourage further learning and curiosity
+  5. Provide practical examples when possible
+  6. If you don't know something, admit it and suggest resources
+  
+  Always be supportive, patient, and educational in your responses.`;
+  
+  const user = context 
+    ? `Lesson Context:\n${context}\n\nStudent Question: ${question}`
+    : `Student Question: ${question}`;
+    
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -175,15 +201,40 @@ export async function askQuestion(context: string, question: string): Promise<st
           { role: "system", content: system },
           { role: "user", content: user }
         ],
-        temperature: 0.5,
+        temperature: 0.7,
+        max_tokens: 500,
       }),
     });
+    
+    if (!res.ok) {
+      throw new Error(`API request failed: ${res.status}`);
+    }
+    
     const json = await res.json();
-    const content = json?.choices?.[0]?.message?.content ?? null;
+    const content = json?.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      throw new Error('No content in response');
+    }
+    
     return content;
-  } catch (_e) {
-    return null;
+  } catch (error) {
+    console.error('AI Question Error:', error);
+    return "I apologize, but I'm having trouble processing your question right now. Please try rephrasing it or check back later. In the meantime, feel free to explore the lesson materials and exercises!";
   }
+}
+
+// General AI Professor chat function for any question
+export async function askAIProfessor(question: string, userContext?: { currentTopic?: string, difficulty?: string, courseName?: string }): Promise<string | null> {
+  const context = userContext 
+    ? `Current Learning Context:
+- Topic: ${userContext.currentTopic || 'General'}
+- Difficulty: ${userContext.difficulty || 'Intermediate'}
+- Course: ${userContext.courseName || 'Current Course'}
+    `
+    : '';
+    
+  return askQuestion(context, question);
 }
 
 

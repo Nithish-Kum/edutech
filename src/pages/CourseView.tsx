@@ -38,6 +38,56 @@ interface CourseData {
 
 type ViewMode = "overview" | "lesson";
 
+// Sample courses function
+const getSampleCourses = () => [
+  {
+    id: "sample-1",
+    title: "Complete React Development",
+    description: "Master React from basics to advanced concepts with hands-on projects",
+    estimatedDuration: "40 hours",
+    difficulty: "Intermediate" as const,
+    category: "Programming",
+    instructor: "AI Professor",
+    tags: ["React", "JavaScript", "Web Development"],
+    modules: [
+      { id: "m1", title: "React Fundamentals", duration: "8 hours", topics: ["Components", "Props", "State"] },
+      { id: "m2", title: "Advanced React", duration: "12 hours", topics: ["Hooks", "Context", "Performance"] },
+      { id: "m3", title: "React Ecosystem", duration: "10 hours", topics: ["Router", "Redux", "Testing"] },
+      { id: "m4", title: "Project Build", duration: "10 hours", topics: ["Planning", "Implementation", "Deployment"] }
+    ]
+  },
+  {
+    id: "sample-2",
+    title: "Machine Learning Fundamentals",
+    description: "Introduction to ML concepts, algorithms, and practical applications",
+    estimatedDuration: "35 hours",
+    difficulty: "Beginner" as const,
+    category: "Technology",
+    instructor: "AI Professor",
+    tags: ["Machine Learning", "Python", "Data Science"],
+    modules: [
+      { id: "m1", title: "ML Basics", duration: "8 hours", topics: ["What is ML", "Types of Learning", "Data Preparation"] },
+      { id: "m2", title: "Algorithms", duration: "15 hours", topics: ["Linear Regression", "Classification", "Clustering"] },
+      { id: "m3", title: "Implementation", duration: "12 hours", topics: ["Python", "Scikit-learn", "Model Evaluation"] }
+    ]
+  },
+  {
+    id: "sample-3",
+    title: "Advanced CSS & Animations",
+    description: "Create stunning web animations and modern CSS layouts",
+    estimatedDuration: "25 hours",
+    difficulty: "Advanced" as const,
+    category: "Design",
+    instructor: "AI Professor",
+    tags: ["CSS", "Animation", "Web Design"],
+    modules: [
+      { id: "m1", title: "Modern CSS", duration: "8 hours", topics: ["Grid", "Flexbox", "Custom Properties"] },
+      { id: "m2", title: "Animations", duration: "10 hours", topics: ["Transforms", "Keyframes", "Transitions"] },
+      { id: "m3", title: "Advanced Techniques", duration: "7 hours", topics: ["3D Effects", "Performance", "Browser Support"] }
+    ]
+  }
+];
+
 const CourseView = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -80,8 +130,16 @@ const CourseView = () => {
             };
           }
         } else {
+          // Check localStorage first
           const local = JSON.parse(localStorage.getItem("courses") || "[]");
-          const match = local.find((c: any, idx: number) => String(idx) === id || c.id === id);
+          let match = local.find((c: any) => c.id === id);
+          
+          // If not found in localStorage, check if it's a sample course
+          if (!match) {
+            const sampleCourses = getSampleCourses();
+            match = sampleCourses.find(c => c.id === id);
+          }
+          
           if (match) courseData = match;
         }
         

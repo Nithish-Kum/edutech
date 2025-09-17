@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/enhanced-button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -62,6 +63,7 @@ const CourseManagement = ({ onCourseSelect }: CourseManagementProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeView, setActiveView] = useState<"all" | "my-courses" | "in-progress" | "completed">("all");
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Categories for filtering
   const categories = [
@@ -93,8 +95,8 @@ const CourseManagement = ({ onCourseSelect }: CourseManagementProps) => {
 
         if (!error && data) {
           loadedCourses = data.map(course => ({
-            ...course.data,
-            id: course.id,
+            ...course,
+            modules: course.modules || [],
             createdAt: course.created_at,
             progress: Math.random() * 100 // TODO: Calculate actual progress
           }));
@@ -266,7 +268,10 @@ const CourseManagement = ({ onCourseSelect }: CourseManagementProps) => {
               {course.title}
             </CardTitle>
             <div className="flex space-x-1">
-              <Button variant="glass" size="sm" onClick={() => onCourseSelect?.(course)}>
+              <Button variant="glass" size="sm" onClick={() => {
+                onCourseSelect?.(course);
+                navigate(`/course/${course.id}`);
+              }}>
                 <Play className="w-4 h-4" />
               </Button>
               <Button variant="glass" size="sm" onClick={() => deleteCourse(course.id)}>

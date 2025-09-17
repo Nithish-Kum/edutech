@@ -12,6 +12,7 @@ import Dashboard from "@/pages/Dashboard";
 import Courses from "@/pages/Courses";
 import Assessments from "@/pages/Assessments";
 import CourseView from "@/pages/CourseView";
+import AIProfessorChat from "@/components/ai/AIProfessorChat";
 
 const queryClient = new QueryClient();
 
